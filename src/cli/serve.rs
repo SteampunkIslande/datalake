@@ -1,9 +1,13 @@
 use clap::Parser;
 use core::net::IpAddr;
-use rocket::{Config, get, routes};
+use rocket::{Config, routes};
 use std::str::FromStr;
 
-#[derive(Parser, Debug)]
+use datalake::backend::*;
+
+use crate::Cli;
+
+#[derive(Parser, Debug, Clone)]
 pub struct Serve {
     /// IP address to listen to (default is 127.0.0.0)
     #[arg(long)]
@@ -18,13 +22,8 @@ pub struct Serve {
     pub route_prefix: Option<String>,
 }
 
-#[get("/world")]
-fn world() -> &'static str {
-    "Hello, world!"
-}
-
 impl Serve {
-    pub fn run(&self) -> anyhow::Result<()> {
+    pub fn run(&self, _cli: &Cli) -> anyhow::Result<()> {
         let address = IpAddr::from_str(match &self.ip {
             Some(ip) => ip.as_str(),
             None => "127.0.0.1",
@@ -45,7 +44,7 @@ impl Serve {
         rocket::execute(async {
             rocket::build()
                 .configure(config)
-                .mount(prefix, routes![world])
+                .mount(prefix, routes![import_file_post])
                 .launch()
                 .await
         })?;

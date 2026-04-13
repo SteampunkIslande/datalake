@@ -3,12 +3,12 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 
 mod import;
-use import::Import;
+pub use import::Import;
 
 mod serve;
-use serve::Serve;
+pub use serve::Serve;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(version, about)]
 pub struct Cli {
     #[command(subcommand)]
@@ -18,7 +18,7 @@ pub struct Cli {
     pub datalake_path: PathBuf,
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Debug, Clone, Subcommand)]
 pub enum Commands {
     /// Imports a raw parquet file (from vcf2parquet)
     Import(Import),
@@ -29,8 +29,8 @@ pub enum Commands {
 impl Cli {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
-            Commands::Import(import) => import.run(),
-            Commands::Serve(serve) => serve.run(),
+            Commands::Import(import) => import.run(self),
+            Commands::Serve(serve) => serve.run(self),
         }
     }
 }
