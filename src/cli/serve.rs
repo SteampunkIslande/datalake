@@ -3,7 +3,7 @@ use core::net::IpAddr;
 use rocket::{Config, routes};
 use std::str::FromStr;
 
-use datalake::backend::*;
+use datalake::{DatalakeConfig, backend::*};
 
 use crate::Cli;
 
@@ -23,7 +23,7 @@ pub struct Serve {
 }
 
 impl Serve {
-    pub fn run(&self, _cli: &Cli) -> anyhow::Result<()> {
+    pub fn run(&self, cli: &Cli) -> anyhow::Result<()> {
         let address = IpAddr::from_str(match &self.ip {
             Some(ip) => ip.as_str(),
             None => "127.0.0.1",
@@ -31,20 +31,21 @@ impl Serve {
 
         let config = Config {
             port: self.port.unwrap_or(8000),
-            address: address,
+            address,
             ..Config::default()
         };
 
-        let prefix = self
-            .route_prefix
-            .as_ref()
-            .map(|s| s.as_str())
-            .unwrap_or("/datalake");
+        let datalake_config: DatalakeConfig = DatalakeConfig {
+            datalake_path: cli.datalake_path.clone(),
+        };
+
+        let prefix = self.route_prefix.as_deref().unwrap_or("/datalake");
 
         rocket::execute(async {
             rocket::build()
                 .configure(config)
                 .mount(prefix, routes![import_file_post])
+                .manage(datalake_config)
                 .launch()
                 .await
         })?;
